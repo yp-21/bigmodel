@@ -1,93 +1,135 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <title>智能 简易聊天</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 0; }
+    /* 登录层 */
+    #loginBox { position: fixed; inset: 0; background: #fff; display: flex; align-items: center; justify-content: center; z-index: 9999; }
+    #loginForm { width: 320px; padding: 32px; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; }
+    #loginForm h2 { margin: 0 0 20px; font-size: 20px; text-align: center; }
+    #loginForm input { width: 100%; padding: 10px; margin-bottom: 12px; font-size: 15px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+    #loginForm button { width: 100%; padding: 10px; font-size: 15px; background: #10a37f; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+    #loginForm .error { color: #e00; font-size: 14px; margin-top: 8px; text-align: center; }
+    /* 聊天区 */
     .wrap { max-width: 720px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,.08); padding: 24px 32px 32px; }
     h1 { margin: 0 0 20px; font-size: 24px; color: #111; }
     textarea { width: 100%; box-sizing: border-box; padding: 10px; font-size: 15px; border: 1px solid #ddd; border-radius: 6px; resize: vertical; }
     #question { min-height: 80px; }
     #answer  { min-height: 120px; background: #fafafa; }
-    .row { margin-top: 16px; }
+    .row { margin-top: 16px; display: flex; align-items: center; gap: 12px; }
     button { background: #10a37f; color: #fff; border: none; padding: 8px 20px; font-size: 15px; border-radius: 4px; cursor: pointer; }
     button:disabled { background: #88c9b8; cursor: not-allowed; }
     label { display: block; margin-bottom: 6px; font-weight: 600; color: #333; }
+    #logoutBtn { margin-left: auto; background: #e45; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>智能 问答</h1>
 
-    <label for="question">输入问题</label>
-    <textarea id="question" placeholder="在这里输入你想问的任何问题…"></textarea>
+<!-- ======== 登录层 ======== -->
+<div id="loginBox">
+  <form id="loginForm" onsubmit="return doLogin()">
+    <h2>登录 智能 聊天</h2>
+    <input id="user" type="text"     placeholder="用户名" required>
+    <input id="pwd"  type="password" placeholder="密码"   required>
+    <button type="submit">登录</button>
+    <div id="loginErr" class="error"></div>
+  </form>
+</div>
 
-    <div class="row">
-      <button id="sendBtn" onclick="sendQuestion()">发送</button>
-    </div>
+<!-- ======== 聊天界面 ======== -->
+<div class="wrap" id="chatWrap" style="display:none">
+  <h1>智能 问答
+    <button id="logoutBtn" onclick="doLogout()">退出</button>
+  </h1>
 
-    <label for="answer" style="margin-top:24px">智能 回答</label>
-    <textarea id="answer" readonly placeholder="回答会出现在这里…"></textarea>
+  <label for="question">输入问题</label>
+  <textarea id="question" placeholder="在这里输入你想问的任何问题…"></textarea>
+
+  <div class="row">
+    <button id="sendBtn" onclick="sendQuestion()">发送</button>
   </div>
 
-  <script>
-    // ========== 配置区：填你的 Key ==========
-    const MOONSHOT_API_KEY = 'sk-K3DELa7jSs70NbGojfgYFRcAtqzD5ksYyaEYq8o2JYx4iXyp';   // ← 换成自己的
-    const API_URL = 'https://api.moonshot.cn/v1/chat/completions';
-    // ========================================
+  <label for="answer" style="margin-top:24px">智能 回答</label>
+  <textarea id="answer" readonly placeholder="回答会出现在这里…"></textarea>
+</div>
 
-    async function sendQuestion() {
-      const qBox = document.getElementById('question');
-      const aBox = document.getElementById('answer');
-      const btn   = document.getElementById('sendBtn');
+<script>
+  // ========== 硬编码账号密码（演示用） ==========
+  const USER = '智能';
+  const PASS = '123456';
+  // ============================================
 
-      const question = qBox.value.trim();
-      if (!question) return alert('请先输入问题');
+  const loginBox = document.getElementById('loginBox');
+  const chatWrap = document.getElementById('chatWrap');
+  const qBox     = document.getElementById('question');
+  const aBox     = document.getElementById('answer');
 
-      btn.disabled = true;
-      aBox.value = '思考中…';
+  /* 进入页面先检查是否已登录 */
+  window.onload = () => {
+    if (localStorage.getItem('智能_logged') === '1') showChat();
+  };
 
-      try {
-        const res = await fetch(API_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${MOONSHOT_API_KEY}`
-          },
-          body: JSON.stringify({
-            model: '智能-k2-turbo-preview',
-            temperature: 0.6,
-            messages: [
-              {
-                role: 'system',
-                content: '你是 智能，由 Moonshot AI 提供的人工智能助手，你更擅长中文和英文的对话。你会为用户提供安全，有帮助，准确的回答。同时，你会拒绝一切涉及恐怖主义，种族歧视，黄色暴力等问题的回答。Moonshot AI 为专有名词，不可翻译成其他语言。'
-              },
-              { role: 'user', content: question }
-            ]
-          })
-        });
-
-        if (!res.ok) {
-          const msg = await res.text();
-          throw new Error(`HTTP ${res.status}：${msg}`);
-        }
-
-        const data = await res.json();
-        const reply = data.choices?.[0]?.message?.content ?? '无返回内容';
-        aBox.value = reply;
-
-      } catch (err) {
-        aBox.value = '出错：' + err.message;
-      } finally {
-        btn.disabled = false;
-      }
+  function doLogin() {
+    const u = document.getElementById('user').value.trim();
+    const p = document.getElementById('pwd').value.trim();
+    if (u === USER && p === PASS) {
+      localStorage.setItem('智能_logged', '1');
+      showChat();
+    } else {
+      document.getElementById('loginErr').textContent = '用户名或密码错误';
     }
+    return false; // 阻止表单提交刷新
+  }
 
-    // 支持 Ctrl+Enter 快捷发送
-    document.getElementById('question').addEventListener('keydown', e => {
-      if (e.ctrlKey && e.key === 'Enter') sendQuestion();
-    });
-  </script>
+  function showChat() {
+    loginBox.style.display = 'none';
+    chatWrap.style.display = 'block';
+  }
+
+  function doLogout() {
+    localStorage.removeItem('智能_logged');
+    location.reload(); // 回到登录页
+  }
+
+  /* ======== 以下是你原来的聊天逻辑 ======== */
+  const MOONSHOT_API_KEY = 'sk-K3DELa7jSs70NbGojfgYFRcAtqzD5ksYyaEYq8o2JYx4iXyp';
+  const API_URL = 'https://api.moonshot.cn/v1/chat/completions';
+
+  async function sendQuestion() {
+    const question = qBox.value.trim();
+    if (!question) return alert('请先输入问题');
+    document.getElementById('sendBtn').disabled = true;
+    aBox.value = '思考中…';
+
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${MOONSHOT_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: '智能-k2-turbo-preview',
+          temperature: 0.6,
+          messages: [
+            { role: 'system', content: '你是 智能，由 Moonshot AI 提供的人工智能助手，你更擅长中文和英文的对话。你会为用户提供安全，有帮助，准确的回答。同时，你会拒绝一切涉及恐怖主义，种族歧视，黄色暴力等问题的回答。Moonshot AI 为专有名词，不可翻译成其他语言。' },
+            { role: 'user', content: question }
+          ]
+        })
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      aBox.value = data.choices?.[0]?.message?.content ?? '无返回内容';
+    } catch (err) {
+      aBox.value = '出错：' + err.message;
+    } finally {
+      document.getElementById('sendBtn').disabled = false;
+    }
+  }
+
+  qBox.addEventListener('keydown', e => { if (e.ctrlKey && e.key === 'Enter') sendQuestion(); });
+</script>
 </body>
 </html>
