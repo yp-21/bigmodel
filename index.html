@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>Kimi 简易聊天</title>
+  <title>智能 简易聊天</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 0; }
     .wrap { max-width: 720px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,.08); padding: 24px 32px 32px; }
@@ -18,7 +18,7 @@
 </head>
 <body>
   <div class="wrap">
-    <h1>Kimi 问答</h1>
+    <h1>智能 问答</h1>
 
     <label for="question">输入问题</label>
     <textarea id="question" placeholder="在这里输入你想问的任何问题…"></textarea>
@@ -27,7 +27,7 @@
       <button id="sendBtn" onclick="sendQuestion()">发送</button>
     </div>
 
-    <label for="answer" style="margin-top:24px">Kimi 回答</label>
+    <label for="answer" style="margin-top:24px">智能 回答</label>
     <textarea id="answer" readonly placeholder="回答会出现在这里…"></textarea>
   </div>
 
@@ -56,12 +56,12 @@
             'Authorization': `Bearer ${MOONSHOT_API_KEY}`
           },
           body: JSON.stringify({
-            model: 'kimi-k2-turbo-preview',
+            model: '智能-k2-turbo-preview',
             temperature: 0.6,
             messages: [
               {
                 role: 'system',
-                content: '你是 Kimi，由 Moonshot AI 提供的人工智能助手，你更擅长中文和英文的对话。你会为用户提供安全，有帮助，准确的回答。同时，你会拒绝一切涉及恐怖主义，种族歧视，黄色暴力等问题的回答。Moonshot AI 为专有名词，不可翻译成其他语言。'
+                content: '你是 智能，由 Moonshot AI 提供的人工智能助手，你更擅长中文和英文的对话。你会为用户提供安全，有帮助，准确的回答。同时，你会拒绝一切涉及恐怖主义，种族歧视，黄色暴力等问题的回答。Moonshot AI 为专有名词，不可翻译成其他语言。'
               },
               { role: 'user', content: question }
             ]
