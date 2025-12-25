@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>Kimi 简易聊天</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 0; }
+    .wrap { max-width: 720px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,.08); padding: 24px 32px 32px; }
+    h1 { margin: 0 0 20px; font-size: 24px; color: #111; }
+    textarea { width: 100%; box-sizing: border-box; padding: 10px; font-size: 15px; border: 1px solid #ddd; border-radius: 6px; resize: vertical; }
+    #question { min-height: 80px; }
+    #answer  { min-height: 120px; background: #fafafa; }
+    .row { margin-top: 16px; }
+    button { background: #10a37f; color: #fff; border: none; padding: 8px 20px; font-size: 15px; border-radius: 4px; cursor: pointer; }
+    button:disabled { background: #88c9b8; cursor: not-allowed; }
+    label { display: block; margin-bottom: 6px; font-weight: 600; color: #333; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Kimi 问答</h1>
+
+    <label for="question">输入问题</label>
+    <textarea id="question" placeholder="在这里输入你想问的任何问题…"></textarea>
+
+    <div class="row">
+      <button id="sendBtn" onclick="sendQuestion()">发送</button>
+    </div>
+
+    <label for="answer" style="margin-top:24px">Kimi 回答</label>
+    <textarea id="answer" readonly placeholder="回答会出现在这里…"></textarea>
+  </div>
+
+  <script>
+    // ========== 配置区：填你的 Key ==========
+    const MOONSHOT_API_KEY = 'sk-K3DELa7jSs70NbGojfgYFRcAtqzD5ksYyaEYq8o2JYx4iXyp';   // ← 换成自己的
+    const API_URL = 'https://api.moonshot.cn/v1/chat/completions';
+    // ========================================
+
+    async function sendQuestion() {
+      const qBox = document.getElementById('question');
+      const aBox = document.getElementById('answer');
+      const btn   = document.getElementById('sendBtn');
+
+      const question = qBox.value.trim();
+      if (!question) return alert('请先输入问题');
+
+      btn.disabled = true;
+      aBox.value = '思考中…';
+
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${MOONSHOT_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: 'kimi-k2-turbo-preview',
+            temperature: 0.6,
+            messages: [
+              {
+                role: 'system',
+                content: '你是 Kimi，由 Moonshot AI 提供的人工智能助手，你更擅长中文和英文的对话。你会为用户提供安全，有帮助，准确的回答。同时，你会拒绝一切涉及恐怖主义，种族歧视，黄色暴力等问题的回答。Moonshot AI 为专有名词，不可翻译成其他语言。'
+              },
+              { role: 'user', content: question }
+            ]
+          })
+        });
+
+        if (!res.ok) {
+          const msg = await res.text();
+          throw new Error(`HTTP ${res.status}：${msg}`);
+        }
+
+        const data = await res.json();
+        const reply = data.choices?.[0]?.message?.content ?? '无返回内容';
+        aBox.value = reply;
+
+      } catch (err) {
+        aBox.value = '出错：' + err.message;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // 支持 Ctrl+Enter 快捷发送
+    document.getElementById('question').addEventListener('keydown', e => {
+      if (e.ctrlKey && e.key === 'Enter') sendQuestion();
+    });
+  </script>
+</body>
+</html>
